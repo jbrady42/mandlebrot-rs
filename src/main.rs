@@ -1,4 +1,3 @@
-use num::complex::Complex;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::mpsc::channel;
@@ -67,8 +66,8 @@ fn main() {
     let opt = Opt::from_args();
 
     // Resolution
-    let samples = (opt.width as usize, opt.height as usize);
-    let center = Complex::new(opt.center_x, opt.center_y);
+    let samples = (opt.width, opt.height);
+    let center = (opt.center_x, opt.center_y);
 
     let mut scale = opt.start_scale;
 

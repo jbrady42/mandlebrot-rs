@@ -12,17 +12,15 @@ pub struct Mandel {
 }
 
 impl Mandel {
-    pub fn new(
-        samples: (usize, usize),
-        scale_factor: f64,
-        center: Complex<f64>,
-        seq: u32,
-    ) -> Mandel {
+    pub fn new(samples: (u32, u32), scale_factor: f64, center: (f64, f64), seq: u32) -> Mandel {
         let scale = if scale_factor < 0.0 {
             0.0000000000000000000001
         } else {
             scale_factor
         };
+
+        let center = Complex::new(center.0, center.1);
+        let samples = (samples.0 as usize, samples.1 as usize);
 
         let samps = Complex::new(samples.0 as f64, samples.1 as f64);
         let start_point = center - samps.scale(scale * 0.5);
