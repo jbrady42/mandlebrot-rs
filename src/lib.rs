@@ -8,7 +8,7 @@ pub struct Mandel {
     scale: f64,
     start_point: Complex<f64>,
     data: Vec<Vec<i32>>,
-    seq: u32,
+    pub seq: u32,
 }
 
 impl Mandel {

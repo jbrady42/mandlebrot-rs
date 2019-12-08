@@ -16,3 +16,4 @@ structopt-derive = "0.3.5"
 # Util
 actix-web = "1.0"
 serde = "1.0.103"
+image-base64 = "0.1.0"
