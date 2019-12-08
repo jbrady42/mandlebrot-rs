@@ -5,7 +5,7 @@ use std::sync::mpsc::channel;
 use structopt::StructOpt;
 use threadpool::ThreadPool;
 
-use mandlebrot::Mandle;
+use mandelbrot::Mandel;
 
 #[derive(StructOpt)]
 #[structopt(name = "mandlebrot", about = "Generate Mandlebrot zoom images")]
@@ -90,11 +90,11 @@ fn main() {
         }
 
         //Skip frames that have already been generated
-        if !Path::new(&Mandle::image_path(frame)).exists() {
+        if !Path::new(&Mandel::image_path(frame)).exists() {
             let tx = tx.clone();
             pool.execute(move || {
                 println!("Render frame {}", frame);
-                let mut man = Mandle::new(samples, scale, center, frame);
+                let mut man = Mandel::new(samples, scale, center, frame);
                 man.generate();
                 man.draw_image();
                 tx.send(true).expect("done channel open");

@@ -1,5 +1,5 @@
 [package]
-name = "mandlebrot"
+name = "mandelbrot"
 version = "0.1.0"
 authors = ["Jason <jabrady42@gmail.com>"]
 edition = "2018"
@@ -12,3 +12,7 @@ image = "0.22.3"
 threadpool = "1.7.1"
 structopt = "0.3"
 structopt-derive = "0.3.5"
+
+# Util
+actix-web = "1.0"
+serde = "1.0.103"

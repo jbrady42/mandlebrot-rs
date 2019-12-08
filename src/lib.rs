@@ -3,7 +3,7 @@ use num::complex::Complex;
 const MAX_ITER: u32 = 255;
 const MAX_DISTANCE: u32 = 4;
 
-pub struct Mandle {
+pub struct Mandel {
     samples: (usize, usize),
     scale: f64,
     start_point: Complex<f64>,
@@ -11,13 +11,13 @@ pub struct Mandle {
     seq: u32,
 }
 
-impl Mandle {
+impl Mandel {
     pub fn new(
         samples: (usize, usize),
         scale_factor: f64,
         center: Complex<f64>,
         seq: u32,
-    ) -> Mandle {
+    ) -> Mandel {
         let scale = if scale_factor < 0.0 {
             0.0000000000000000000001
         } else {
@@ -28,7 +28,7 @@ impl Mandle {
         let start_point = center - samps.scale(scale * 0.5);
         let data = vec![vec![0; samples.1]; samples.0];
 
-        Mandle {
+        Mandel {
             samples,
             scale,
             start_point,
@@ -42,7 +42,7 @@ impl Mandle {
             for y in 0..self.samples.1 {
                 let x0 = x as f64 * self.scale + self.start_point.re;
                 let y0 = y as f64 * self.scale + self.start_point.im;
-                let res = Mandle::diverge_count(Complex::new(x0, y0), MAX_ITER, MAX_DISTANCE);
+                let res = Mandel::diverge_count(Complex::new(x0, y0), MAX_ITER, MAX_DISTANCE);
                 self.data[x][y] = res;
             }
         }
@@ -59,11 +59,11 @@ impl Mandle {
             let clr = if div < 0 {
                 image::Rgb([0, 0, 0])
             } else {
-                Mandle::get_color(div)
+                Mandel::get_color(div)
             };
             *pixel = clr;
         }
-        imgbuf.save(Mandle::image_path(self.seq)).unwrap();
+        imgbuf.save(Mandel::image_path(self.seq)).unwrap();
     }
 
     fn get_color(iter: i32) -> image::Rgb<u8> {
