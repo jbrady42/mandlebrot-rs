@@ -1,5 +1,7 @@
 use num::complex::Complex;
 use std::fs::create_dir_all;
+use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
 
 const MAX_ITER: u32 = 10;
 const MAX_DISTANCE: u32 = 4;
@@ -15,10 +17,16 @@ struct Mandle {
 }
 
 impl Mandle {
-    fn new(scale: f64, center_x: f64, center_y: f64, seq: u32) -> Mandle {
+    fn new(scale_factor: f64, center_x: f64, center_y: f64, seq: u32) -> Mandle {
         // Resolution
-        let samples_x = 800;
-        let samples_y = 800;
+        let samples_x = 400;
+        let samples_y = 400;
+
+        let scale = if scale_factor < 0.0 {
+            0.0000000000000000000001
+        } else {
+            scale_factor
+        };
 
         let start_x = center_x - (samples_x / 2) as f64 * scale;
         let start_y = center_y - (samples_y / 2) as f64 * scale;
@@ -63,23 +71,46 @@ impl Mandle {
 }
 
 fn main() {
-    let mut scale = 0.05;
+    let mut scale = 0.0005;
 
-    let x_center = -0.5;
-    let y_center = 0.5;
+    let x_center = -1.77;
+    let y_center = 0.06;
 
-    let zoom_step = 0.0005;
+    let zoom_step = 0.000005;
+
+    let max_frames = 500;
 
     // Create output dir
     create_dir_all("img").unwrap();
 
-    for i in 0..100 {
-        println!("scale {}", scale);
-        let mut man = Mandle::new(scale, x_center, y_center, i);
-        man.generate();
-        man.draw_image();
+    let n_workers = 8;
+    let pool = ThreadPool::new(n_workers);
+    let (tx, rx) = channel::<bool>();
+
+    let mut frames = 0;
+
+    for i in 0..max_frames {
+        if scale < 0.0 {
+            println!("Scale going negativeat frame {}", i);
+            break;
+        }
+
+        let tx = tx.clone();
+
+        pool.execute(move || {
+            println!("frame {} scale {}", i, scale);
+            let mut man = Mandle::new(scale, x_center, y_center, i);
+            man.generate();
+            man.draw_image();
+            tx.send(true).expect("done channel open");
+        });
+
+        frames += 1;
         scale -= zoom_step;
     }
+
+    // Wait for work to complete
+    rx.iter().take(frames).collect::<Vec<bool>>();
 }
 
 fn mandle_diverge(c1: Complex<f64>, max_iter: u32, max_dist: u32) -> i32 {
