@@ -48,6 +48,10 @@ impl Mandle {
         }
     }
 
+    pub fn image_path(seq: u32) -> String {
+        format!("img/fractal-{:09}.png", seq)
+    }
+
     pub fn draw_image(&self) {
         let mut imgbuf = image::ImageBuffer::new(self.samples.0 as u32, self.samples.1 as u32);
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
@@ -59,9 +63,7 @@ impl Mandle {
             };
             *pixel = clr;
         }
-        // Save the image as “fractal.png”, the format is deduced from the path
-        let n = format!("img/fractal-{:09}.png", self.seq);
-        imgbuf.save(n).unwrap();
+        imgbuf.save(Mandle::image_path(self.seq)).unwrap();
     }
 
     fn get_color(iter: i32) -> image::Rgb<u8> {

@@ -1,5 +1,6 @@
 use num::complex::Complex;
 use std::fs::create_dir_all;
+use std::path::Path;
 use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
@@ -11,7 +12,7 @@ fn set_zoom(sc: f64) -> f64 {
 
 fn main() {
     // Resolution
-    let samples = (100, 100);
+    let samples = (1920, 1080);
 
     let mut scale = 0.01;
 
@@ -22,7 +23,7 @@ fn main() {
 
     let mut zoom_step = set_zoom(scale);
 
-    let max_frames = 31;
+    let max_frames = 3700;
 
     // Create output dir
     create_dir_all("img").unwrap();
@@ -32,20 +33,26 @@ fn main() {
     let (tx, rx) = channel::<bool>();
 
     let mut frame = 0;
+    let mut skip = 0;
     while frame < max_frames {
         if scale < 0.0 {
             println!("Scale going negative at frame {}", frame);
             break;
         }
 
-        let tx = tx.clone();
-        pool.execute(move || {
-            println!("Render frame {}", frame);
-            let mut man = Mandle::new(samples, scale, center, frame);
-            man.generate();
-            man.draw_image();
-            tx.send(true).expect("done channel open");
-        });
+        //Skip frames that have already been generated
+        if !Path::new(&Mandle::image_path(frame)).exists() {
+            let tx = tx.clone();
+            pool.execute(move || {
+                println!("Render frame {}", frame);
+                let mut man = Mandle::new(samples, scale, center, frame);
+                man.generate();
+                man.draw_image();
+                tx.send(true).expect("done channel open");
+            });
+        } else {
+            skip += 1;
+        }
 
         if frame % 25 == 0 {
             zoom_step = set_zoom(scale);
@@ -56,5 +63,5 @@ fn main() {
     }
 
     // Wait for work to complete
-    rx.iter().take(frame as usize).for_each(drop);
+    rx.iter().take((frame - skip) as usize).for_each(drop);
 }
