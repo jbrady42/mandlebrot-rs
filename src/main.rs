@@ -2,28 +2,77 @@ use num::complex::Complex;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::mpsc::channel;
+use structopt::StructOpt;
 use threadpool::ThreadPool;
 
 use mandlebrot::Mandle;
+
+#[derive(StructOpt)]
+#[structopt(name = "mandlebrot", about = "Generate Mandlebrot zoom images")]
+struct Opt {
+    #[structopt(
+        short = "f",
+        long = "frames",
+        help = "Set number of frames",
+        default_value = "1"
+    )]
+    frames: u32,
+
+    #[structopt(
+        short = "w",
+        long = "width",
+        help = "Set width of image",
+        default_value = "800"
+    )]
+    width: u32,
+
+    #[structopt(
+        short = "h",
+        long = "height",
+        help = "Set height of image",
+        default_value = "800"
+    )]
+    height: u32,
+
+    #[structopt(
+        short = "x",
+        long = "center-x",
+        help = "Set center-x of image",
+        default_value = "0.001643721971153"
+    )]
+    center_x: f64,
+
+    #[structopt(
+        short = "y",
+        long = "center-y",
+        help = "Set center-y of image",
+        default_value = "-0.822467633298876"
+    )]
+    center_y: f64,
+
+    #[structopt(
+        short = "s",
+        long = "scale",
+        help = "Set start scale",
+        default_value = "0.01"
+    )]
+    start_scale: f64,
+}
 
 fn set_zoom(sc: f64) -> f64 {
     sc / 150.0
 }
 
 fn main() {
+    let opt = Opt::from_args();
+
     // Resolution
-    let samples = (1920, 1080);
+    let samples = (opt.width as usize, opt.height as usize);
+    let center = Complex::new(opt.center_x, opt.center_y);
 
-    let mut scale = 0.01;
-
-    let x_center = 0.001643721971153;
-    let y_center = -0.822467633298876;
-
-    let center = Complex::new(x_center, y_center);
+    let mut scale = opt.start_scale;
 
     let mut zoom_step = set_zoom(scale);
-
-    let max_frames = 3700;
 
     // Create output dir
     create_dir_all("img").unwrap();
@@ -34,7 +83,7 @@ fn main() {
 
     let mut frame = 0;
     let mut skip = 0;
-    while frame < max_frames {
+    while frame < opt.frames {
         if scale < 0.0 {
             println!("Scale going negative at frame {}", frame);
             break;
