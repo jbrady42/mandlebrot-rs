@@ -9,8 +9,8 @@ use mandelbrot::Mandel;
 
 #[derive(Deserialize, Debug)]
 struct Info {
-    cx: f64,
-    cy: f64,
+    cx: String,
+    cy: String,
     scale: String,
     width: u32,
     height: u32,
@@ -19,10 +19,12 @@ struct Info {
 #[get("/")]
 fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
     println!("Info {:?}", info);
-    let center = (info.cx, info.cy);
     let dims = (info.width, info.height);
 
     let scale = Float::from_str(&info.scale, 128).unwrap();
+    let cx = Float::from_str(&info.cx, 128).unwrap();
+    let cy = Float::from_str(&info.cy, 128).unwrap();
+    let center = (cx, cy);
 
     let mut man = Mandel::new(dims, scale, center, 0);
     man.generate();

@@ -15,18 +15,13 @@ pub struct Mandel {
 }
 
 impl Mandel {
-    pub fn new(samples: (u32, u32), scale: Float, center: (f64, f64), seq: u32) -> Mandel {
-        // let scale = if scale_factor < 0.0 {
-        //     0.0000000000000000000001
-        // } else {
-        //     scale_factor
-        // };
-
+    pub fn new(samples: (u32, u32), scale: Float, center: (Float, Float), seq: u32) -> Mandel {
         let center = Complex::with_val(NUM_PREC, (center.0, center.1));
         let samples = (samples.0 as usize, samples.1 as usize);
 
         let mut samps = Complex::with_val(NUM_PREC, (samples.0 as f64, samples.1 as f64));
         samps *= Float::with_val(128, 0.5);
+
         let start_point = center - (samps * &scale);
         let data = vec![vec![0; 1]; 1];
 

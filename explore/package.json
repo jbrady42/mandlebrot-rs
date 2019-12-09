@@ -1,0 +1,17 @@
+{
+  "name": "explore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "bigfloat": "^0.1.1",
+    "browserify": "^16.5.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "browserify main.js > bundle.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

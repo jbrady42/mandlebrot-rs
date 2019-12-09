@@ -68,7 +68,10 @@ fn main() {
 
     // Resolution
     let samples = (opt.width, opt.height);
-    let center = (opt.center_x, opt.center_y);
+    let center = (
+        Float::with_val(128, opt.center_x),
+        Float::with_val(128, opt.center_y),
+    );
 
     let mut scale = Float::from_str(&opt.start_scale, 128).unwrap();
 
@@ -90,12 +93,13 @@ fn main() {
         }
 
         //Skip frames that have already been generated
-        let sc = scale.clone();
         if !Path::new(&Mandel::image_path(frame)).exists() {
+            let sc = scale.clone();
+            let cen = center.clone();
             let tx = tx.clone();
             pool.execute(move || {
                 println!("Render frame {}", frame);
-                let mut man = Mandel::new(samples, sc, center, frame);
+                let mut man = Mandel::new(samples, sc, cen, frame);
                 man.generate();
                 man.draw_image();
                 tx.send(true).expect("done channel open");
