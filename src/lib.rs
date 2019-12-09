@@ -1,9 +1,8 @@
 use image::ImageBuffer;
+use rayon::prelude::*;
 use rug::{Complex, Float};
-use std::sync::mpsc::channel;
-use threadpool::ThreadPool;
 
-const MAX_ITER: u32 = 100000;
+const MAX_ITER: u32 = 100;
 const MAX_DISTANCE: u32 = 4;
 const NUM_PREC: u32 = 128;
 
@@ -29,7 +28,7 @@ impl Mandel {
         let mut samps = Complex::with_val(NUM_PREC, (samples.0 as f64, samples.1 as f64));
         samps *= Float::with_val(128, 0.5);
         let start_point = center - (samps * &scale);
-        let data = vec![vec![0; 1]; samples.0];
+        let data = vec![vec![0; 1]; 1];
 
         println!("Start point {:?}", start_point);
 
@@ -43,32 +42,23 @@ impl Mandel {
     }
 
     pub fn generate(&mut self) {
-        let n_workers = 8;
-        let pool = ThreadPool::new(n_workers);
-        let (tx, rx) = channel::<(usize, Vec<i32>)>();
+        let scale = self.scale.clone();
+        let start = self.start_point.clone();
+        let ycount = self.samples.1;
 
-        for x in 0..self.samples.0 {
-            let scale = self.scale.clone();
-            let start = self.start_point.clone();
-            let ycount = self.samples.1;
-            let tx = tx.clone();
-            pool.execute(move || {
-                let line = Mandel::line(x, ycount, scale, start);
-                tx.send((x, line)).expect("done channel open");
-            });
-        }
-
-        rx.iter().take(self.samples.0).for_each(|(x, data)| {
-            self.data[x] = data;
-        });
+        self.data = (0..self.samples.0)
+            .collect::<Vec<usize>>()
+            .par_iter()
+            .map(move |&x| Mandel::line(x, ycount, &scale, &start))
+            .collect::<Vec<Vec<i32>>>();
     }
 
-    fn line(x: usize, count: usize, scale: Float, start: Complex) -> Vec<i32> {
+    fn line(x: usize, count: usize, scale: &Float, start: &Complex) -> Vec<i32> {
         let mut d = vec![0; count];
         for y in 0..count {
             let mut c1 = Complex::with_val(NUM_PREC, (x as f64, y as f64));
-            c1 *= &scale;
-            c1 += &start;
+            c1 *= scale;
+            c1 += start;
             let res = Mandel::diverge_count(c1, MAX_ITER, MAX_DISTANCE);
             d[y] = res;
         }
@@ -116,16 +106,11 @@ impl Mandel {
     }
 
     fn diverge_count(c1: Complex, max_iter: u32, max_dist: u32) -> i32 {
-        // println!("{:?}", c1);
         let mut c = Complex::with_val(NUM_PREC, (0.0, 0.0));
         for i in 0..max_iter {
-            // println!("c {:?}", c);
             c.square_mut();
-            // println!("c2 {:?}", c);
             c += &c1;
-            // println!("c3 {:?}", c);
             let dist = c.clone().norm();
-            // println!("dist {:?}", dist);
             if dist > max_dist as f64 {
                 return i as i32;
             }
@@ -136,7 +121,6 @@ impl Mandel {
     pub fn dump(&self) {
         for a in &self.data {
             print!("{:?}", a);
-            // for i in a {}
             println!("");
         }
     }

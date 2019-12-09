@@ -77,7 +77,7 @@ fn main() {
     // Create output dir
     create_dir_all("img").unwrap();
 
-    let n_workers = 8;
+    let n_workers = 2;
     let pool = ThreadPool::new(n_workers);
     let (tx, rx) = channel::<bool>();
 
