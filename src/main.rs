@@ -1,3 +1,4 @@
+use rug::{Complex, Float};
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::mpsc::channel;
@@ -21,7 +22,7 @@ struct Opt {
         short = "w",
         long = "width",
         help = "Set width of image",
-        default_value = "800"
+        default_value = "80"
     )]
     width: u32,
 
@@ -29,7 +30,7 @@ struct Opt {
         short = "h",
         long = "height",
         help = "Set height of image",
-        default_value = "800"
+        default_value = "80"
     )]
     height: u32,
 
@@ -55,11 +56,11 @@ struct Opt {
         help = "Set start scale",
         default_value = "0.01"
     )]
-    start_scale: f64,
+    start_scale: String,
 }
 
-fn set_zoom(sc: f64) -> f64 {
-    sc / 150.0
+fn set_zoom(sc: &Float) -> Float {
+    Float::with_val(128, sc / 150.0)
 }
 
 fn main() {
@@ -69,9 +70,9 @@ fn main() {
     let samples = (opt.width, opt.height);
     let center = (opt.center_x, opt.center_y);
 
-    let mut scale = opt.start_scale;
+    let mut scale = Float::from_str(&opt.start_scale, 128).unwrap();
 
-    let mut zoom_step = set_zoom(scale);
+    let mut zoom_step = set_zoom(&scale);
 
     // Create output dir
     create_dir_all("img").unwrap();
@@ -89,11 +90,12 @@ fn main() {
         }
 
         //Skip frames that have already been generated
+        let sc = scale.clone();
         if !Path::new(&Mandel::image_path(frame)).exists() {
             let tx = tx.clone();
             pool.execute(move || {
                 println!("Render frame {}", frame);
-                let mut man = Mandel::new(samples, scale, center, frame);
+                let mut man = Mandel::new(samples, sc, center, frame);
                 man.generate();
                 man.draw_image();
                 tx.send(true).expect("done channel open");
@@ -103,10 +105,10 @@ fn main() {
         }
 
         if frame % 25 == 0 {
-            zoom_step = set_zoom(scale);
+            zoom_step = set_zoom(&scale);
         }
         println!("frame {} scale {}", frame, scale);
-        scale -= zoom_step;
+        scale -= &zoom_step;
         frame += 1;
     }
 

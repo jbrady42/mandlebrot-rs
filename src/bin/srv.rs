@@ -1,5 +1,6 @@
 use actix_web::get;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
+use rug::{Complex, Float};
 use serde::Deserialize;
 
 use image_base64;
@@ -10,7 +11,7 @@ use mandelbrot::Mandel;
 struct Info {
     cx: f64,
     cy: f64,
-    scale: f64,
+    scale: String,
     width: u32,
     height: u32,
 }
@@ -23,7 +24,9 @@ fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
     let center = (info.cx, info.cy);
     let dims = (info.width, info.height);
 
-    let mut man = Mandel::new(dims, info.scale, center, 0);
+    let scale = Float::from_str(&info.scale, 128).unwrap();
+
+    let mut man = Mandel::new(dims, scale, center, 0);
     man.generate();
     man.draw_image();
 
