@@ -1,0 +1,92 @@
+<html>
+<head>
+</head>
+<body>
+<canvas id="c" width="800" height="800"></canvas>
+<button onclick="zoom(true)">Zoom In</button>
+<button onclick="zoom(false)">Zoom Out</button>
+<button>Reset</button>
+<script type="text/javascript">
+
+var canvas = document.getElementById("c");
+var ctx = canvas.getContext("2d");
+
+var image = new Image();
+image.onload = function() {
+  ctx.drawImage(image, 0, 0);
+};
+
+var state = {
+  cx: 0.0,
+  cy: 0.0,
+  scale: 0.005,
+  zoomStep: 0,
+  width: 800,
+  height: 800,
+}
+
+function setZoomStep() {
+  state.zoomStep = state.scale / 5;
+}
+
+async function getData() {
+  let url = `http://localhost:8088/?cx=${state.cx}&cy=${state.cy}&scale=${state.scale}&width=${state.width}&height=${state.height}`;
+  let response = await fetch(url);
+
+  if (response.ok) {
+    let body = await response.text();
+    image.src = body;
+    console.log("Loaded")
+  } else {
+    alert("HTTP-Error: " + response.status);
+  }
+
+}
+
+function zoom(directionIn) {
+  zoomCenter(directionIn, state.width/2, state.height/2)
+}
+
+async function zoomCenter(directionIn, x, y) {
+  let step = directionIn ? state.zoomStep : -state.zoomStep;
+
+
+  let sx = (x - state.width / 2) * state.scale + state.cx;
+  let sy = (state.height / 2 - y) * state.scale + state.cy;
+
+  state.scale -= step;
+
+  state.cx = sx;
+  state.cy = sy;
+
+  setZoomStep();
+  getData();
+}
+
+
+
+canvas.addEventListener("click", function(event) {
+  let x = event.offsetX;
+  let y = event.offsetY;
+
+  console.log(`x ${x} y ${y}`)
+
+  zoomCenter(true, x, y)
+});
+
+canvas.oncontextmenu = function(event) {
+  let x = event.offsetX;
+  let y = event.offsetY;
+
+  console.log(`x ${x} y ${y}`)
+   zoomCenter(false, x, y)
+   return false;
+}
+
+// Start off
+setZoomStep()
+getData()
+
+</script>
+</body>
+</html>

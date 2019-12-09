@@ -1,5 +1,5 @@
 use actix_web::get;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 
 use image_base64;
@@ -15,8 +15,10 @@ struct Info {
     height: u32,
 }
 
-#[get("/hello")]
-fn index3(info: web::Query<Info>) -> impl Responder {
+// Access-Control-Allow-Origin
+
+#[get("/")]
+fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
     println!("Info {:?}", info);
     let center = (info.cx, info.cy);
     let dims = (info.width, info.height);
@@ -31,9 +33,13 @@ fn index3(info: web::Query<Info>) -> impl Responder {
 }
 
 fn main() {
-    HttpServer::new(|| App::new().service(index3))
-        .bind("127.0.0.1:8088")
-        .unwrap()
-        .run()
-        .unwrap();
+    HttpServer::new(|| {
+        App::new()
+            .wrap(middleware::DefaultHeaders::new().header("Access-Control-Allow-Origin", "*"))
+            .service(serve_mandelbrot)
+    })
+    .bind("127.0.0.1:8088")
+    .unwrap()
+    .run()
+    .unwrap();
 }

@@ -1,3 +1,4 @@
+use image::ImageBuffer;
 use num::complex::Complex;
 
 const MAX_ITER: u32 = 255;
@@ -50,7 +51,7 @@ impl Mandel {
         format!("img/fractal-{:09}.png", seq)
     }
 
-    pub fn draw_image(&self) {
+    pub fn render_image(&self) -> ImageBuffer<image::Rgb<u8>, Vec<u8>> {
         let mut imgbuf = image::ImageBuffer::new(self.samples.0 as u32, self.samples.1 as u32);
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
             let div = self.data[x as usize][self.samples.1 - 1 - y as usize];
@@ -61,6 +62,11 @@ impl Mandel {
             };
             *pixel = clr;
         }
+        imgbuf
+    }
+
+    pub fn draw_image(&self) {
+        let imgbuf = self.render_image();
         imgbuf.save(Mandel::image_path(self.seq)).unwrap();
     }
 
