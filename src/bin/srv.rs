@@ -16,8 +16,6 @@ struct Info {
     height: u32,
 }
 
-// Access-Control-Allow-Origin
-
 #[get("/")]
 fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
     println!("Info {:?}", info);

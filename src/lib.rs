@@ -1,7 +1,9 @@
 use image::ImageBuffer;
 use rug::{Complex, Float};
+use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
 
-const MAX_ITER: u32 = 500;
+const MAX_ITER: u32 = 100000;
 const MAX_DISTANCE: u32 = 4;
 const NUM_PREC: u32 = 128;
 
@@ -27,7 +29,7 @@ impl Mandel {
         let mut samps = Complex::with_val(NUM_PREC, (samples.0 as f64, samples.1 as f64));
         samps *= Float::with_val(128, 0.5);
         let start_point = center - (samps * &scale);
-        let data = vec![vec![0; samples.1]; samples.0];
+        let data = vec![vec![0; 1]; samples.0];
 
         println!("Start point {:?}", start_point);
 
@@ -41,15 +43,36 @@ impl Mandel {
     }
 
     pub fn generate(&mut self) {
+        let n_workers = 8;
+        let pool = ThreadPool::new(n_workers);
+        let (tx, rx) = channel::<(usize, Vec<i32>)>();
+
         for x in 0..self.samples.0 {
-            for y in 0..self.samples.1 {
-                let mut c1 = Complex::with_val(NUM_PREC, (x as f64, y as f64));
-                c1 *= &self.scale;
-                c1 += &self.start_point;
-                let res = Mandel::diverge_count(c1, MAX_ITER, MAX_DISTANCE);
-                self.data[x][y] = res;
-            }
+            let scale = self.scale.clone();
+            let start = self.start_point.clone();
+            let ycount = self.samples.1;
+            let tx = tx.clone();
+            pool.execute(move || {
+                let line = Mandel::line(x, ycount, scale, start);
+                tx.send((x, line)).expect("done channel open");
+            });
         }
+
+        rx.iter().take(self.samples.0).for_each(|(x, data)| {
+            self.data[x] = data;
+        });
+    }
+
+    fn line(x: usize, count: usize, scale: Float, start: Complex) -> Vec<i32> {
+        let mut d = vec![0; count];
+        for y in 0..count {
+            let mut c1 = Complex::with_val(NUM_PREC, (x as f64, y as f64));
+            c1 *= &scale;
+            c1 += &start;
+            let res = Mandel::diverge_count(c1, MAX_ITER, MAX_DISTANCE);
+            d[y] = res;
+        }
+        d
     }
 
     pub fn image_path(seq: u32) -> String {
@@ -85,9 +108,9 @@ impl Mandel {
     fn color_RGB_space(iter: i32) -> image::Rgb<u8> {
         let base = 255;
         let r = (iter % base) as u8;
-        let mut c = iter - base;
+        let mut c = iter / base;
         let g = (c % base) as u8;
-        c = iter - base;
+        c /= base;
         let b = (c % base) as u8;
         image::Rgb([r, g, b])
     }
