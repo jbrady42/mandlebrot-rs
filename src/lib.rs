@@ -1,6 +1,8 @@
 use image::ImageBuffer;
+use random_color::RandomColor;
 use rayon::prelude::*;
 use rug::{Complex, Float};
+use std::collections::HashMap;
 
 const MAX_ITER: u32 = 100;
 const MAX_DISTANCE: u32 = 4;
@@ -20,7 +22,7 @@ impl Mandel {
         let samples = (samples.0 as usize, samples.1 as usize);
 
         let mut samps = Complex::with_val(NUM_PREC, (samples.0 as f64, samples.1 as f64));
-        samps *= Float::with_val(128, 0.5);
+        samps *= Float::with_val(NUM_PREC, 0.5);
 
         let start_point = center - (samps * &scale);
         let data = vec![vec![0; 1]; 1];
@@ -64,40 +66,23 @@ impl Mandel {
         format!("img/fractal-{:09}.png", seq)
     }
 
-    pub fn render_image(&self) -> ImageBuffer<image::Rgb<u8>, Vec<u8>> {
+    pub fn render_image(
+        &self,
+        palette: &HashMap<i32, image::Rgb<u8>>,
+    ) -> ImageBuffer<image::Rgb<u8>, Vec<u8>> {
+        let palette = color_palette();
         let mut imgbuf = image::ImageBuffer::new(self.samples.0 as u32, self.samples.1 as u32);
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
             let div = self.data[x as usize][self.samples.1 - 1 - y as usize];
-            let clr = if div < 0 {
-                image::Rgb([0, 0, 0])
-            } else {
-                Mandel::get_color(div)
-            };
+            let clr = *palette.get(&div).unwrap();
             *pixel = clr;
         }
         imgbuf
     }
 
-    pub fn draw_image(&self) {
-        let imgbuf = self.render_image();
+    pub fn draw_image(&self, palette: &HashMap<i32, image::Rgb<u8>>) {
+        let imgbuf = self.render_image(palette);
         imgbuf.save(Mandel::image_path(self.seq)).unwrap();
-    }
-
-    fn get_color(iter: i32) -> image::Rgb<u8> {
-        return Mandel::color_RGB_space(iter);
-        let pct = iter as f64 / MAX_ITER as f64;
-        let r = (255.0 * pct) as u8;
-        image::Rgb([r, 0, 0])
-    }
-
-    fn color_RGB_space(iter: i32) -> image::Rgb<u8> {
-        let base = 255;
-        let r = (iter % base) as u8;
-        let mut c = iter / base;
-        let g = (c % base) as u8;
-        c /= base;
-        let b = (c % base) as u8;
-        image::Rgb([r, g, b])
     }
 
     fn diverge_count(c1: Complex, max_iter: u32, max_dist: u32) -> i32 {
@@ -119,4 +104,18 @@ impl Mandel {
             println!("");
         }
     }
+}
+
+fn int_pix(data: [u32; 3]) -> [u8; 3] {
+    [data[0] as u8, data[1] as u8, data[2] as u8]
+}
+
+pub fn color_palette() -> HashMap<i32, image::Rgb<u8>> {
+    let mut map = HashMap::new();
+    map.entry(-1).or_insert(image::Rgb([0, 0, 0]));
+    for i in 0..MAX_ITER {
+        let vals = int_pix(RandomColor::new().to_rgb_array());
+        map.entry(i as i32).or_insert(image::Rgb(vals));
+    }
+    map
 }

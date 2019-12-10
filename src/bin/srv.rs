@@ -1,11 +1,12 @@
 use actix_web::get;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
-use rug::{Complex, Float};
+use rug::Float;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 use image_base64;
 
-use mandelbrot::Mandel;
+use mandelbrot::{color_palette, Mandel};
 
 #[derive(Deserialize, Debug)]
 struct Info {
@@ -16,8 +17,12 @@ struct Info {
     height: u32,
 }
 
+struct AppState {
+    palette: HashMap<i32, image::Rgb<u8>>,
+}
+
 #[get("/")]
-fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
+fn serve_mandelbrot(info: web::Query<Info>, state: web::Data<AppState>) -> impl Responder {
     println!("Info {:?}", info);
     let dims = (info.width, info.height);
 
@@ -28,7 +33,7 @@ fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
 
     let mut man = Mandel::new(dims, scale, center, 0);
     man.generate();
-    man.draw_image();
+    man.draw_image(&state.palette);
 
     // Get base64
     let base64 = image_base64::to_base64(&Mandel::image_path(man.seq));
@@ -38,6 +43,9 @@ fn serve_mandelbrot(info: web::Query<Info>) -> impl Responder {
 fn main() {
     HttpServer::new(|| {
         App::new()
+            .data(AppState {
+                palette: color_palette(),
+            })
             .wrap(middleware::DefaultHeaders::new().header("Access-Control-Allow-Origin", "*"))
             .service(serve_mandelbrot)
     })

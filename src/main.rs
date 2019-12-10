@@ -1,11 +1,11 @@
-use rug::{Complex, Float};
+use rug::Float;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::mpsc::channel;
 use structopt::StructOpt;
 use threadpool::ThreadPool;
 
-use mandelbrot::Mandel;
+use mandelbrot::{color_palette, Mandel};
 
 #[derive(StructOpt)]
 #[structopt(name = "mandlebrot", about = "Generate Mandlebrot zoom images")]
@@ -66,6 +66,8 @@ fn set_zoom(sc: &Float) -> Float {
 fn main() {
     let opt = Opt::from_args();
 
+    let palette = color_palette();
+
     // Resolution
     let samples = (opt.width, opt.height);
     let center = (
@@ -97,11 +99,12 @@ fn main() {
             let sc = scale.clone();
             let cen = center.clone();
             let tx = tx.clone();
+            let pal = palette.clone();
             pool.execute(move || {
                 println!("Render frame {}", frame);
                 let mut man = Mandel::new(samples, sc, cen, frame);
                 man.generate();
-                man.draw_image();
+                man.draw_image(&pal);
                 tx.send(true).expect("done channel open");
             });
         } else {

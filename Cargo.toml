@@ -14,6 +14,7 @@ structopt = "0.3"
 structopt-derive = "0.3.5"
 rug = "0.6.0"
 rayon = "1.1"
+random_color = "0.4.4"
 
 # Util
 actix-web = "1.0"
